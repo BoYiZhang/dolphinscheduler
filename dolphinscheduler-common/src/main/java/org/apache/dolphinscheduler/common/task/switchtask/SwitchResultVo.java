@@ -14,26 +14,36 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.dolphinscheduler.api.utils.exportprocess;
 
-import com.fasterxml.jackson.databind.JsonNode;
+package org.apache.dolphinscheduler.common.task.switchtask;
 
-/**
- * ProcessAddTaskParam
- */
-public interface ProcessAddTaskParam {
+import java.util.ArrayList;
+import java.util.List;
 
-    /**
-     * add export task special param: sql task dependent task
-     * @param taskNode task node json object
-     * @return task node json object
-     */
-    JsonNode addExportSpecialParam(JsonNode taskNode);
+public class SwitchResultVo {
 
-    /**
-     * add task special param: sql task dependent task
-     * @param taskNode task node json object
-     * @return task node json object
-     */
-    JsonNode addImportSpecialParam(JsonNode taskNode);
+    private String condition;
+    private List<String> nextNode;
+
+    public String getCondition() {
+        return condition;
+    }
+
+    public void setCondition(String condition) {
+        this.condition = condition;
+    }
+
+    public List<String> getNextNode() {
+        return nextNode;
+    }
+
+    public void setNextNode(Object nextNode) {
+        if (nextNode instanceof String) {
+            List<String> nextNodeList = new ArrayList<>();
+            nextNodeList.add(String.valueOf(nextNode));
+            this.nextNode = nextNodeList;
+        } else {
+            this.nextNode = (ArrayList) nextNode;
+        }
+    }
 }

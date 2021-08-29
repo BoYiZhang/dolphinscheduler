@@ -14,25 +14,25 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.dolphinscheduler.api.utils.exportprocess;
 
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
+package org.apache.dolphinscheduler.common.utils;
 
-/**
- * task node param factory
- */
-public class TaskNodeParamFactory {
+public class ArrayUtils {
 
-    private static Map<String, ProcessAddTaskParam> taskServices = new ConcurrentHashMap<>();
-
-    public static ProcessAddTaskParam getByTaskType(String taskType){
-        return taskServices.get(taskType);
+    public static byte[] clone(byte[] array) {
+        return array == null ? null : (byte[])((byte[])array.clone());
     }
 
-    static void register(String taskType, ProcessAddTaskParam addSpecialTaskParam){
-        if (null != taskType) {
-            taskServices.put(taskType, addSpecialTaskParam);
+    public static byte[] addAll(byte[] array1, byte[] array2) {
+        if (array1 == null) {
+            return clone(array2);
+        } else if (array2 == null) {
+            return clone(array1);
+        } else {
+            byte[] joinedArray = new byte[array1.length + array2.length];
+            System.arraycopy(array1, 0, joinedArray, 0, array1.length);
+            System.arraycopy(array2, 0, joinedArray, array1.length, array2.length);
+            return joinedArray;
         }
     }
 }
