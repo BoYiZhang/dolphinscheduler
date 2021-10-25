@@ -46,6 +46,10 @@
     </div>
     <div class="content-box" v-if="isContentBox">
       <div class="form-model">
+
+        <!-- Reference from task -->
+        <!-- <reference-from-task :taskType="nodeData.taskType" /> -->
+
         <!-- Node name -->
         <m-list-box>
           <div slot="text">{{ $t("Node name") }}</div>
@@ -62,9 +66,6 @@
             </el-input>
           </div>
         </m-list-box>
-
-        <!-- Copy from task -->
-        <copy-from-task v-if="!isDetails" :taskType="nodeData.taskType" />
 
         <!-- Running sign -->
         <m-list-box>
@@ -117,6 +118,7 @@
             <m-related-environment
               v-model="environmentCode"
               :workerGroup="workerGroup"
+              :isNewCreate="isNewCreate"
               v-on:environmentCodeEvent="_onUpdateEnvironmentCode"
             ></m-related-environment>
           </div>
@@ -262,15 +264,6 @@
             :backfill-item="backfillItem"
           >
           </m-shell>
-          <!-- waterdrop node -->
-          <m-waterdrop
-            v-if="nodeData.taskType === 'WATERDROP'"
-            @on-params="_onParams"
-            @on-cache-params="_onCacheParams"
-            ref="WATERDROP"
-            :backfill-item="backfillItem"
-          >
-          </m-waterdrop>
           <!-- sub_process node -->
           <m-sub-process
             v-if="nodeData.taskType === 'SUB_PROCESS'"
@@ -360,6 +353,13 @@
             :backfill-item="backfillItem"
           >
           </m-datax>
+        <m-pigeon
+          v-if="nodeData.taskType === 'PIGEON'"
+          @on-params="_onParams"
+          @on-cache-params="_onCacheParams"
+          :backfill-item="backfillItem"
+          ref="PIGEON">
+        </m-pigeon>
           <m-sqoop
             v-if="nodeData.taskType === 'SQOOP'"
             @on-params="_onParams"
@@ -383,7 +383,17 @@
             @on-switch-result="_onSwitchResult"
             :backfill-item="backfillItem"
             :nodeData="nodeData"
+            :postTasks="postTasks"
           ></m-switch>
+          <!-- waterdrop node -->
+          <m-waterdrop
+            v-if="nodeData.taskType === 'WATERDROP'"
+            @on-params="_onParams"
+            @on-cache-params="_onCacheParams"
+            ref="WATERDROP"
+            :backfill-item="backfillItem"
+          >
+          </m-waterdrop>
         </div>
         <!-- Pre-tasks in workflow -->
         <m-pre-tasks
@@ -428,6 +438,7 @@
   import mDependent from './tasks/dependent'
   import mHttp from './tasks/http'
   import mDatax from './tasks/datax'
+  import mPigeon from './tasks/pigeon'
   import mConditions from './tasks/conditions'
   import mSwitch from './tasks/switch.vue'
   import mSqoop from './tasks/sqoop'
@@ -442,7 +453,7 @@
   import disabledState from '@/module/mixin/disabledState'
   import mPriority from '@/module/components/priority/priority'
   import { findComponentDownward } from '@/module/util/'
-  import CopyFromTask from './_source/copyFromTask.vue'
+  // import ReferenceFromTask from './_source/referenceFromTask.vue'
 
   export default {
     name: 'form-model',
@@ -507,11 +518,13 @@
             label: `${i18n.$t('Failed')}`
           }
         ],
-        // for CONDITIONS
+        // for CONDITIONS and SWITCH
         postTasks: [],
         prevTasks: [],
         // refresh part of the formModel, after set backfillItem outside
-        backfillRefresh: true
+        backfillRefresh: true,
+        // whether this is a new Task
+        isNewCreate: true
       }
     },
     provide () {
@@ -538,6 +551,7 @@
         return {
           code: task.code,
           conditionResult: task.taskParams.conditionResult,
+          switchResult: task.taskParams.switchResult,
           delayTime: task.delayTime,
           dependence: task.taskParams.dependence,
           desc: task.description,
@@ -547,7 +561,8 @@
           params: _.omit(task.taskParams, [
             'conditionResult',
             'dependence',
-            'waitStartTimeout'
+            'waitStartTimeout',
+            'switchResult'
           ]),
           retryInterval: task.failRetryInterval,
           runFlag: task.flag,
@@ -559,7 +574,8 @@
           },
           type: task.taskType,
           waitStartTimeout: task.taskParams.waitStartTimeout,
-          workerGroup: task.workerGroup
+          workerGroup: task.workerGroup,
+          environmentCode: task.environmentCode
         }
       },
       /**
@@ -632,7 +648,7 @@
             .dispatch('dag/getSubProcessId', { taskId: this.taskInstance.id })
             .then((res) => {
               this.$emit('onSubProcess', {
-                subProcessId: res.data.subProcessInstanceId,
+                subInstanceId: res.data.subProcessInstanceId,
                 fromThis: this
               })
             })
@@ -692,13 +708,6 @@
         if (this.name === this.backfillItem.name) {
           return true
         }
-        // Name repeat depends on dom backfill dependent store
-        const tasks = this.store.state.dag.tasks
-        const task = tasks.find((t) => t.name === 'this.name')
-        if (task) {
-          this.$message.warning(`${i18n.$t('Name already exists')}`)
-          return false
-        }
         return true
       },
       _verifWorkGroup () {
@@ -757,7 +766,8 @@
               ...this.params,
               dependence: this.cacheDependence,
               conditionResult: this.conditionResult,
-              waitStartTimeout: this.waitStartTimeout
+              waitStartTimeout: this.waitStartTimeout,
+              switchResult: this.switchResult
             },
             flag: this.runFlag,
             taskPriority: this.taskInstancePriority,
@@ -768,7 +778,7 @@
             timeoutNotifyStrategy: this.timeout.strategy,
             timeout: this.timeout.interval || 0,
             delayTime: this.delayTime,
-            environmentCode: this.environmentCode,
+            environmentCode: this.environmentCode || -1,
             status: this.status,
             branch: this.branch
           },
@@ -839,12 +849,12 @@
           fromThis: this
         })
       },
-      backfill (backfillItem, copyFromTask) {
+      backfill (backfillItem) {
         const o = backfillItem
         // Non-null objects represent backfill
         if (!_.isEmpty(o)) {
           this.code = o.code
-          !copyFromTask && (this.name = o.name)
+          this.name = o.name
           this.taskInstancePriority = o.taskInstancePriority
           this.runFlag = o.runFlag || 'YES'
           this.desc = o.desc
@@ -854,6 +864,9 @@
           if (o.conditionResult) {
             this.successBranch = o.conditionResult.successNode[0]
             this.failedBranch = o.conditionResult.failedNode[0]
+          }
+          if (o.switchResult) {
+            this.switchResult = o.switchResult
           }
           // If the workergroup has been deleted, set the default workergroup
           for (
@@ -880,7 +893,7 @@
           } else {
             this.workerGroup = o.workerGroup
           }
-          this.environmentCode = o.environmentCode
+          this.environmentCode = o.environmentCode === -1 ? '' : o.environmentCode
           this.params = o.params || {}
           this.dependence = o.dependence || {}
           this.cacheDependence = o.dependence || {}
@@ -901,6 +914,7 @@
             const backfillItem = this.taskToBackfillItem(task)
             o = backfillItem
             this.backfillItem = backfillItem
+            this.isNewCreate = false
           }
         })
       }
@@ -962,6 +976,7 @@
       mDependent,
       mHttp,
       mDatax,
+      mPigeon,
       mSqoop,
       mConditions,
       mSwitch,
@@ -971,8 +986,8 @@
       mPriority,
       mWorkerGroups,
       mRelatedEnvironment,
-      mPreTasks,
-      CopyFromTask
+      mPreTasks
+      // ReferenceFromTask
     }
   }
 </script>

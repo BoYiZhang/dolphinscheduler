@@ -61,6 +61,8 @@ public class StandaloneServer {
 
         startAlertServer();
 
+        setTaskPlugin();
+
         new SpringApplicationBuilder(
                 ApiApplicationServer.class,
                 MasterServer.class,
@@ -108,10 +110,23 @@ public class StandaloneServer {
         System.setProperty(SPRING_DATASOURCE_USERNAME, "sa");
         System.setProperty(SPRING_DATASOURCE_PASSWORD, "");
 
-        Server.createTcpServer("-ifNotExists").start();
+        Server.createTcpServer("-ifNotExists", "-tcpDaemon").start();
 
         final DataSource ds = ConnectionFactory.getInstance().getDataSource();
         final ScriptRunner runner = new ScriptRunner(ds.getConnection(), true, true);
         runner.runScript(new FileReader("sql/dolphinscheduler_h2.sql"));
+    }
+
+    private static void setTaskPlugin() {
+        final Path taskPluginPath = Paths.get(
+                StandaloneServer.class.getProtectionDomain().getCodeSource().getLocation().getPath(),
+                "../../../dolphinscheduler-task-plugin/dolphinscheduler-task-shell/pom.xml"
+        ).toAbsolutePath();
+        if (Files.exists(taskPluginPath)) {
+            System.setProperty("task.plugin.binding", taskPluginPath.toString());
+            System.setProperty("task.plugin.dir", "");
+        } else {
+            System.setProperty("task.plugin.binding", "lib/plugin/task/shell");
+        }
     }
 }
