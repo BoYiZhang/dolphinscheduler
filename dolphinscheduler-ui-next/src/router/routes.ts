@@ -44,7 +44,9 @@ const basePage: RouteRecordRaw[] = [
         name: 'home',
         component: components['home'],
         meta: {
-          title: '首页'
+          title: '首页',
+          activeMenu: 'home',
+          auth: []
         }
       },
       {
@@ -52,7 +54,8 @@ const basePage: RouteRecordRaw[] = [
         name: 'password',
         component: components['password'],
         meta: {
-          title: '修改密码'
+          title: '修改密码',
+          auth: []
         }
       },
       {
@@ -60,7 +63,8 @@ const basePage: RouteRecordRaw[] = [
         name: 'profile',
         component: components['profile'],
         meta: {
-          title: '用户信息'
+          title: '用户信息',
+          auth: []
         }
       }
     ]
@@ -80,7 +84,10 @@ const loginPage: RouteRecordRaw[] = [
   {
     path: '/login',
     name: 'login',
-    component: components['login']
+    component: components['login'],
+    meta: {
+      auth: []
+    }
   }
 ]
 

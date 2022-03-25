@@ -17,10 +17,10 @@
 
 package org.apache.dolphinscheduler.api.enums;
 
+import org.springframework.context.i18n.LocaleContextHolder;
+
 import java.util.Locale;
 import java.util.Optional;
-
-import org.springframework.context.i18n.LocaleContextHolder;
 
 /**
  * status enum      // todo #4855 One category one interval
@@ -226,7 +226,7 @@ public enum Status {
     UDF_RESOURCE_SUFFIX_NOT_JAR(20009, "UDF resource suffix name must be jar", "UDF资源文件后缀名只支持[jar]"),
     HDFS_COPY_FAIL(20010, "hdfs copy {0} -> {1} fail", "hdfs复制失败：[{0}] -> [{1}]"),
     RESOURCE_FILE_EXIST(20011, "resource file {0} already exists in hdfs,please delete it or change name!", "资源文件[{0}]在hdfs中已存在，请删除或修改资源名"),
-    RESOURCE_FILE_NOT_EXIST(20012, "resource file {0} not exists in hdfs!", "资源文件[{0}]在hdfs中不存在"),
+    RESOURCE_FILE_NOT_EXIST(20012, "resource file {0} not exists !", "资源文件[{0}]不存在"),
     UDF_RESOURCE_IS_BOUND(20013, "udf resource file is bound by UDF functions:{0}", "udf函数绑定了资源文件[{0}]"),
     RESOURCE_IS_USED(20014, "resource file is used by process definition", "资源文件被上线的流程定义使用了"),
     PARENT_RESOURCE_NOT_EXIST(20015, "parent resource not exist", "父资源文件不存在"),
@@ -297,7 +297,8 @@ public enum Status {
     NOT_SUPPORT_UPDATE_TASK_DEFINITION(50056, "task state does not support modification", "当前任务不支持修改"),
     NOT_SUPPORT_COPY_TASK_TYPE(50057, "task type [{0}] does not support copy", "不支持复制的任务类型[{0}]"),
     HDFS_NOT_STARTUP(60001, "hdfs not startup", "hdfs未启用"),
-
+    STORAGE_NOT_STARTUP(60002, "storage not startup", "存储未启用"),
+    S3_CANNOT_RENAME(60003, "directory cannot be renamed", "S3无法重命名文件夹"),
     /**
      * for monitor
      */
@@ -380,7 +381,18 @@ public enum Status {
     TASK_GROUP_STATUS_OPENED(130019,"The task group has been opened.","任务组已经被开启"),
     NOT_ALLOW_TO_DISABLE_OWN_ACCOUNT(130020, "Not allow to disable your own account", "不能停用自己的账号"),
     NOT_ALLOW_TO_DELETE_DEFAULT_ALARM_GROUP(130030, "Not allow to delete the default alarm group ", "不能删除默认告警组"),
-    ;
+    TIME_ZONE_ILLEGAL(130031, "time zone [{0}] is illegal", "时区参数 [{0}] 不合法"),
+
+    QUERY_K8S_NAMESPACE_LIST_PAGING_ERROR(1300001, "login user query k8s namespace list paging error", "分页查询k8s名称空间列表错误"),
+    K8S_NAMESPACE_EXIST(1300002, "k8s namespace {0} already exists", "k8s命名空间[{0}]已存在"),
+    CREATE_K8S_NAMESPACE_ERROR(1300003, "create k8s namespace error", "创建k8s命名空间错误"),
+    UPDATE_K8S_NAMESPACE_ERROR(1300004, "update k8s namespace error", "更新k8s命名空间信息错误"),
+    K8S_NAMESPACE_NOT_EXIST(1300005, "k8s namespace {0} not exists", "命名空间ID[{0}]不存在"),
+    K8S_CLIENT_OPS_ERROR(1300006, "k8s error with exception {0}", "k8s操作报错[{0}]"),
+    VERIFY_K8S_NAMESPACE_ERROR(1300007, "verify k8s and namespace error", "验证k8s命名空间信息错误"),
+    DELETE_K8S_NAMESPACE_BY_ID_ERROR(1300008, "delete k8s namespace by id error", "删除命名空间错误"),
+    VERIFY_PARAMETER_NAME_FAILED(1300009, "The file name verify  failed", "文件命名校验失败"),
+    STORE_OPERATE_CREATE_ERROR(1300010, "create the resource failed", "存储操作失败");
 
     private final int code;
     private final String enMsg;
