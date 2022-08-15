@@ -33,63 +33,80 @@ public class K8sNamespace {
     private Integer id;
 
     /**
+     * cluster code
+     */
+    private Long code;
+
+    /**
      * namespace name
      */
     @TableField(value = "namespace")
     private String namespace;
+
     /**
      * total cpu limit
      */
     @TableField(value = "limits_cpu")
     private Double limitsCpu;
+
     /**
      * total memory limit,mi
      */
     private Integer limitsMemory;
+
     /**
      * owner
      */
-    @TableField(value = "owner")
-    private String owner;
+    @TableField(value = "user_id")
+    private int userId;
+
+    /**
+     * user name
+     */
+    @TableField(exist = false)
+    private String userName;
 
     /**
      * create_time
      */
     @TableField("create_time")
     private Date createTime;
+
     /**
      * update_time
      */
     @TableField("update_time")
     private Date updateTime;
-    /**
-     * tag use for set this namespace allow run which type
-     */
-    @TableField("tag")
-    private String tag;
 
+    /**
+     * 1.00 = 1 cpu
+     */
     @TableField("pod_request_cpu")
     private Double podRequestCpu = 0.0;
+
     /**
      * Mi
      */
     @TableField("pod_request_memory")
     private Integer podRequestMemory = 0;
+
     /**
-     *
+     * replicas
      */
     @TableField("pod_replicas")
     private Integer podReplicas = 0;
+
     /**
-     * online job
+     * cluster code
      */
-    @TableField("online_job_num")
-    private Integer onlineJobNum = 0;
+    @TableField("cluster_code")
+    private Long clusterCode;
+
     /**
      * k8s name
      */
-    @TableField("k8s")
-    private String k8s;
+    @TableField(exist = false)
+    private String clusterName;
 
     public Integer getId() {
         return id;
@@ -123,12 +140,12 @@ public class K8sNamespace {
         this.limitsMemory = limitsMemory;
     }
 
-    public String getOwner() {
-        return owner;
+    public int getUserId() {
+        return userId;
     }
 
-    public void setOwner(String owner) {
-        this.owner = owner;
+    public void setUserId(int userId) {
+        this.userId = userId;
     }
 
     public Date getCreateTime() {
@@ -147,14 +164,6 @@ public class K8sNamespace {
         this.updateTime = updateTime;
     }
 
-    public String getTag() {
-        return tag;
-    }
-
-    public void setTag(String tag) {
-        this.tag = tag;
-    }
-
     public Integer getPodRequestMemory() {
         return podRequestMemory;
     }
@@ -171,20 +180,20 @@ public class K8sNamespace {
         this.podReplicas = podReplicas;
     }
 
-    public Integer getOnlineJobNum() {
-        return onlineJobNum;
+    public Long getClusterCode() {
+        return clusterCode;
     }
 
-    public void setOnlineJobNum(Integer onlineJobNum) {
-        this.onlineJobNum = onlineJobNum;
+    public void setClusterCode(Long clusterCode) {
+        this.clusterCode = clusterCode;
     }
 
-    public String getK8s() {
-        return k8s;
+    public String getClusterName() {
+        return clusterName;
     }
 
-    public void setK8s(String k8s) {
-        this.k8s = k8s;
+    public void setClusterName(String clusterName) {
+        this.clusterName = clusterName;
     }
 
     public Double getPodRequestCpu() {
@@ -193,5 +202,63 @@ public class K8sNamespace {
 
     public void setPodRequestCpu(Double podRequestCpu) {
         this.podRequestCpu = podRequestCpu;
+    }
+
+    public String getUserName() {
+        return userName;
+    }
+
+    public void setUserName(String userName) {
+        this.userName = userName;
+    }
+
+    @Override
+    public String toString() {
+        return "K8sNamespace{" +
+            "id=" + id +
+            "code=" + code +
+            ", namespace=" + namespace +
+            ", limitsCpu=" + limitsCpu +
+            ", limitsMemory=" + limitsMemory +
+            ", podRequestCpu=" + podRequestCpu +
+            ", podRequestMemory=" + podRequestMemory +
+            ", podReplicas=" + podReplicas +
+            ", clusterCode=" + clusterCode +
+            ", createTime=" + createTime +
+            ", updateTime=" + updateTime +
+            '}';
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) {
+            return true;
+        }
+        if (o == null || getClass() != o.getClass()) {
+            return false;
+        }
+
+        K8sNamespace k8sNamespace = (K8sNamespace) o;
+
+        if (id.equals(k8sNamespace.id)) {
+            return true;
+        }
+
+        return namespace.equals(k8sNamespace.namespace) && clusterName.equals(k8sNamespace.clusterName);
+    }
+
+    @Override
+    public int hashCode() {
+        int result = id;
+        result = 31 * result + (clusterName + namespace).hashCode();
+        return result;
+    }
+
+    public Long getCode() {
+        return code;
+    }
+
+    public void setCode(Long code) {
+        this.code = code;
     }
 }

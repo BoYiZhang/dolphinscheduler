@@ -64,63 +64,61 @@ public enum CommandType {
     MASTER_RESPONSE,
 
     /**
-     * execute task request
+     * task execute start, from api to master
      */
-    TASK_EXECUTE_REQUEST,
+    TASK_EXECUTE_START,
 
     /**
-     * execute task ack
+     * dispatch task request
      */
-    TASK_EXECUTE_ACK,
+    TASK_DISPATCH_REQUEST,
 
     /**
-     * execute task response
+     * task execute running, from worker to master
      */
-    TASK_EXECUTE_RESPONSE,
+    TASK_EXECUTE_RUNNING,
 
     /**
-     * db task ack
+     * task execute running ack, from master to worker
      */
-    DB_TASK_ACK,
+    TASK_EXECUTE_RUNNING_ACK,
 
     /**
-     * db task response
+     * task execute response, from worker to master
      */
-    DB_TASK_RESPONSE,
+    TASK_EXECUTE_RESULT,
 
     /**
-     * kill task
+     * task execute response ack, from master to worker
      */
+    TASK_EXECUTE_RESULT_ACK,
+
     TASK_KILL_REQUEST,
 
-    /**
-     * kill task response
-     */
     TASK_KILL_RESPONSE,
 
+    TASK_REJECT,
+
+    TASK_REJECT_ACK,
+
     /**
-     * HEART_BEAT
+     * task savepoint, for stream task
      */
+    TASK_SAVEPOINT_REQUEST,
+
+    /**
+     * task savepoint ack, for stream task
+     */
+    TASK_SAVEPOINT_RESPONSE,
+
     HEART_BEAT,
 
-    /**
-     * ping
-     */
     PING,
 
-    /**
-     * pong
-     */
     PONG,
 
-    /**
-     * alert send request
-     */
     ALERT_SEND_REQUEST,
 
-    /**
-     * alert send response
-     */
     ALERT_SEND_RESPONSE,
 
     /**
@@ -148,5 +146,15 @@ public enum CommandType {
     /**
      * task state event request
      */
-    TASK_WAKEUP_EVENT_REQUEST;
+    TASK_WAKEUP_EVENT_REQUEST,
+
+    /**
+     * workflow executing data request, from api to master
+     */
+    WORKFLOW_EXECUTING_DATA_REQUEST,
+
+    /**
+     * workflow executing data response, from master to api
+     */
+    WORKFLOW_EXECUTING_DATA_RESPONSE;
 }

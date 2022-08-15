@@ -17,6 +17,7 @@
 
 package org.apache.dolphinscheduler.service.alert;
 
+import org.apache.dolphinscheduler.common.enums.AlertType;
 import org.apache.dolphinscheduler.common.enums.CommandType;
 import org.apache.dolphinscheduler.common.enums.Flag;
 import org.apache.dolphinscheduler.common.enums.WarningType;
@@ -26,13 +27,13 @@ import org.apache.dolphinscheduler.dao.entity.Alert;
 import org.apache.dolphinscheduler.dao.entity.DqExecuteResult;
 import org.apache.dolphinscheduler.dao.entity.DqExecuteResultAlertContent;
 import org.apache.dolphinscheduler.dao.entity.ProcessAlertContent;
-import org.apache.dolphinscheduler.dao.entity.ProcessDefinition;
 import org.apache.dolphinscheduler.dao.entity.ProcessInstance;
 import org.apache.dolphinscheduler.dao.entity.ProjectUser;
 import org.apache.dolphinscheduler.dao.entity.TaskAlertContent;
-import org.apache.dolphinscheduler.dao.entity.TaskDefinition;
 import org.apache.dolphinscheduler.dao.entity.TaskInstance;
 import org.apache.dolphinscheduler.plugin.task.api.enums.dp.DqTaskState;
+
+import org.apache.commons.collections4.CollectionUtils;
 
 import java.util.ArrayList;
 import java.util.Date;
@@ -105,10 +106,10 @@ public class ProcessAlertManager {
                                             ProjectUser projectUser) {
 
         String res = "";
-        if (processInstance.getState().typeIsSuccess()) {
+        if (processInstance.getState().isSuccess()) {
             List<ProcessAlertContent> successTaskList = new ArrayList<>(1);
-            ProcessAlertContent processAlertContent = ProcessAlertContent.newBuilder()
-                    .projectId(projectUser.getProjectId())
+            ProcessAlertContent processAlertContent = ProcessAlertContent.builder()
+                    .projectCode(projectUser.getProjectCode())
                     .projectName(projectUser.getProjectName())
                     .owner(projectUser.getUserName())
                     .processId(processInstance.getId())
@@ -124,15 +125,15 @@ public class ProcessAlertManager {
                     .build();
             successTaskList.add(processAlertContent);
             res = JSONUtils.toJsonString(successTaskList);
-        } else if (processInstance.getState().typeIsFailure()) {
+        } else if (processInstance.getState().isFailure()) {
 
             List<ProcessAlertContent> failedTaskList = new ArrayList<>();
             for (TaskInstance task : taskInstances) {
-                if (task.getState().typeIsSuccess()) {
+                if (task.getState().isSuccess()) {
                     continue;
                 }
-                ProcessAlertContent processAlertContent = ProcessAlertContent.newBuilder()
-                        .projectId(projectUser.getProjectId())
+                ProcessAlertContent processAlertContent = ProcessAlertContent.builder()
+                        .projectCode(projectUser.getProjectCode())
                         .projectName(projectUser.getProjectName())
                         .owner(projectUser.getUserName())
                         .processId(processInstance.getId())
@@ -167,7 +168,7 @@ public class ProcessAlertManager {
         List<ProcessAlertContent> toleranceTaskInstanceList = new ArrayList<>();
 
         for (TaskInstance taskInstance : toleranceTaskList) {
-            ProcessAlertContent processAlertContent = ProcessAlertContent.newBuilder()
+            ProcessAlertContent processAlertContent = ProcessAlertContent.builder()
                     .processId(processInstance.getId())
                     .processDefinitionCode(processInstance.getProcessDefinitionCode())
                     .processName(processInstance.getName())
@@ -195,7 +196,9 @@ public class ProcessAlertManager {
             alert.setContent(content);
             alert.setWarningType(WarningType.FAILURE);
             alert.setCreateTime(new Date());
-            alert.setAlertGroupId(processInstance.getWarningGroupId() == null ? 1 : processInstance.getWarningGroupId());
+            alert.setAlertGroupId(
+                    processInstance.getWarningGroupId() == null ? 1 : processInstance.getWarningGroupId());
+            alert.setAlertType(AlertType.FAULT_TOLERANCE_WARNING);
             alertDao.addAlert(alert);
             logger.info("add alert to db , alert : {}", alert);
 
@@ -222,13 +225,18 @@ public class ProcessAlertManager {
         Alert alert = new Alert();
 
         String cmdName = getCommandCnName(processInstance.getCommandType());
-        String success = processInstance.getState().typeIsSuccess() ? "success" : "failed";
+        String success = processInstance.getState().isSuccess() ? "success" : "failed";
         alert.setTitle(cmdName + " " + success);
-        alert.setWarningType(processInstance.getState().typeIsSuccess() ? WarningType.SUCCESS : WarningType.FAILURE);
-        String content = getContentProcessInstance(processInstance, taskInstances,projectUser);
+        alert.setWarningType(processInstance.getState().isSuccess() ? WarningType.SUCCESS : WarningType.FAILURE);
+        String content = getContentProcessInstance(processInstance, taskInstances, projectUser);
         alert.setContent(content);
         alert.setAlertGroupId(processInstance.getWarningGroupId());
         alert.setCreateTime(new Date());
+        alert.setProjectCode(projectUser.getProjectCode());
+        alert.setProcessDefinitionCode(processInstance.getProcessDefinitionCode());
+        alert.setProcessInstanceId(processInstance.getId());
+        alert.setAlertType(processInstance.getState().isSuccess() ? AlertType.PROCESS_INSTANCE_SUCCESS
+                : AlertType.PROCESS_INSTANCE_FAILURE);
         alertDao.addAlert(alert);
         logger.info("add alert to db , alert: {}", alert);
     }
@@ -247,17 +255,17 @@ public class ProcessAlertManager {
         WarningType warningType = processInstance.getWarningType();
         switch (warningType) {
             case ALL:
-                if (processInstance.getState().typeIsFinished()) {
+                if (processInstance.getState().isFinished()) {
                     sendWarning = true;
                 }
                 break;
             case SUCCESS:
-                if (processInstance.getState().typeIsSuccess()) {
+                if (processInstance.getState().isSuccess()) {
                     sendWarning = true;
                 }
                 break;
             case FAILURE:
-                if (processInstance.getState().typeIsFailure()) {
+                if (processInstance.getState().isFailure()) {
                     sendWarning = true;
                 }
                 break;
@@ -267,13 +275,36 @@ public class ProcessAlertManager {
     }
 
     /**
+     * Send a close alert event, if the processInstance has sent alert before, then will insert a closed event.
+     *
+     * @param processInstance success process instance
+     */
+    public void closeAlert(ProcessInstance processInstance) {
+        List<Alert> alerts = alertDao.listAlerts(processInstance.getId());
+        if (CollectionUtils.isEmpty(alerts)) {
+            // no need to close alert
+            return;
+        }
+
+        Alert alert = new Alert();
+        alert.setAlertGroupId(processInstance.getWarningGroupId());
+        alert.setUpdateTime(new Date());
+        alert.setCreateTime(new Date());
+        alert.setProjectCode(processInstance.getProcessDefinition().getProjectCode());
+        alert.setProcessDefinitionCode(processInstance.getProcessDefinitionCode());
+        alert.setProcessInstanceId(processInstance.getId());
+        alert.setAlertType(AlertType.CLOSE_ALERT);
+        alertDao.addAlert(alert);
+    }
+
+    /**
      * send process timeout alert
      *
      * @param processInstance process instance
-     * @param processDefinition process definition
+     * @param projectUser     projectUser
      */
-    public void sendProcessTimeoutAlert(ProcessInstance processInstance, ProcessDefinition processDefinition) {
-        alertDao.sendProcessTimeoutAlert(processInstance, processDefinition);
+    public void sendProcessTimeoutAlert(ProcessInstance processInstance, ProjectUser projectUser) {
+        alertDao.sendProcessTimeoutAlert(processInstance, projectUser);
     }
 
     /**
@@ -287,6 +318,12 @@ public class ProcessAlertManager {
         alert.setContent(content);
         alert.setAlertGroupId(processInstance.getWarningGroupId());
         alert.setCreateTime(new Date());
+        alert.setProjectCode(result.getProjectCode());
+        alert.setProcessDefinitionCode(processInstance.getProcessDefinitionCode());
+        alert.setProcessInstanceId(processInstance.getId());
+        // might need to change to data quality status
+        alert.setAlertType(processInstance.getState().isSuccess() ? AlertType.PROCESS_INSTANCE_SUCCESS
+                : AlertType.PROCESS_INSTANCE_FAILURE);
         alertDao.addAlert(alert);
         logger.info("add alert to db , alert: {}", alert);
     }
@@ -294,13 +331,16 @@ public class ProcessAlertManager {
     /**
      * send data quality task error alert
      */
-    public void sendTaskErrorAlert(TaskInstance taskInstance,ProcessInstance processInstance) {
+    public void sendTaskErrorAlert(TaskInstance taskInstance, ProcessInstance processInstance) {
         Alert alert = new Alert();
         alert.setTitle("Task [" + taskInstance.getName() + "] Failure Warning");
         String content = getTaskAlterContent(taskInstance);
         alert.setContent(content);
         alert.setAlertGroupId(processInstance.getWarningGroupId());
         alert.setCreateTime(new Date());
+        alert.setProcessDefinitionCode(processInstance.getProcessDefinitionCode());
+        alert.setProcessInstanceId(processInstance.getId());
+        alert.setAlertType(AlertType.TASK_FAILURE);
         alertDao.addAlert(alert);
         logger.info("add alert to db , alert: {}", alert);
     }
@@ -343,7 +383,7 @@ public class ProcessAlertManager {
      */
     public String getTaskAlterContent(TaskInstance taskInstance) {
 
-        TaskAlertContent content = TaskAlertContent.newBuilder()
+        TaskAlertContent content = TaskAlertContent.builder()
                 .processInstanceName(taskInstance.getProcessInstanceName())
                 .processInstanceId(taskInstance.getProcessInstanceId())
                 .taskInstanceId(taskInstance.getId())
@@ -359,8 +399,9 @@ public class ProcessAlertManager {
         return JSONUtils.toJsonString(content);
     }
 
-    public void sendTaskTimeoutAlert(ProcessInstance processInstance, TaskInstance taskInstance, TaskDefinition taskDefinition) {
-        alertDao.sendTaskTimeoutAlert(processInstance, taskInstance, taskDefinition);
+    public void sendTaskTimeoutAlert(ProcessInstance processInstance, TaskInstance taskInstance,
+                                     ProjectUser projectUser) {
+        alertDao.sendTaskTimeoutAlert(processInstance, taskInstance, projectUser);
     }
 
     /**
@@ -375,8 +416,8 @@ public class ProcessAlertManager {
         Alert alert = new Alert();
         String cmdName = getCommandCnName(processInstance.getCommandType());
         List<ProcessAlertContent> blockingNodeList = new ArrayList<>(1);
-        ProcessAlertContent processAlertContent = ProcessAlertContent.newBuilder()
-                .projectId(projectUser.getProjectId())
+        ProcessAlertContent processAlertContent = ProcessAlertContent.builder()
+                .projectCode(projectUser.getProjectCode())
                 .projectName(projectUser.getProjectName())
                 .owner(projectUser.getUserName())
                 .processId(processInstance.getId())
@@ -394,7 +435,11 @@ public class ProcessAlertManager {
         alert.setContent(content);
         alert.setAlertGroupId(processInstance.getWarningGroupId());
         alert.setCreateTime(new Date());
+        alert.setProjectCode(projectUser.getProjectCode());
+        alert.setProcessDefinitionCode(processInstance.getProcessDefinitionCode());
+        alert.setProcessInstanceId(processInstance.getId());
+        alert.setAlertType(AlertType.PROCESS_INSTANCE_BLOCKED);
         alertDao.addAlert(alert);
-        logger.info("add alert to db, alert: {}",alert);
+        logger.info("add alert to db, alert: {}", alert);
     }
 }

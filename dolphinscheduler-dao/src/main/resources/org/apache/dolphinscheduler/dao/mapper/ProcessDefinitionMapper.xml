@@ -84,7 +84,7 @@
         <if test=" userId != 0">
             and td.user_id = #{userId}
         </if>
-        order by sc.schedule_release_state desc,td.update_time desc,td.id asc
+        order by td.update_time desc,td.id asc
     </select>
 
     <select id="queryAllDefinitionList" resultType="org.apache.dolphinscheduler.dao.entity.ProcessDefinition">
@@ -93,6 +93,19 @@
         from t_ds_process_definition
         where project_code = #{projectCode}
         order by create_time desc
+    </select>
+    <select id="queryDefinitionListByProjectCodeAndProcessDefinitionCodes" resultType="org.apache.dolphinscheduler.dao.entity.DependentSimplifyDefinition">
+        select
+            code, name, version
+        from t_ds_process_definition
+        where 1=1
+        AND project_code = #{projectCode}
+        <if test="codes != null and codes.size() != 0">
+            and code in
+            <foreach collection="codes" index="index" item="i" open="(" separator="," close=")">
+                #{i}
+            </foreach>
+        </if>
     </select>
     <select id="queryDefinitionListByTenant" resultType="org.apache.dolphinscheduler.dao.entity.ProcessDefinition">
         select

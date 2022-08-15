@@ -21,7 +21,7 @@
     <parent>
         <artifactId>dolphinscheduler</artifactId>
         <groupId>org.apache.dolphinscheduler</groupId>
-        <version>2.0.4-SNAPSHOT</version>
+        <version>dev-SNAPSHOT</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
@@ -51,14 +51,13 @@
         </dependency>
 
         <dependency>
-            <groupId>org.apache.dolphinscheduler</groupId>
-            <artifactId>dolphinscheduler-python</artifactId>
+            <groupId>com.h2database</groupId>
+            <artifactId>h2</artifactId>
         </dependency>
 
         <dependency>
             <groupId>org.apache.curator</groupId>
             <artifactId>curator-test</artifactId>
-            <version>${curator.test}</version>
             <exclusions>
                 <exclusion>
                     <groupId>org.javassist</groupId>
@@ -67,6 +66,18 @@
             </exclusions>
         </dependency>
     </dependencies>
+
+    <dependencyManagement>
+        <dependencies>
+            <dependency>
+                <groupId>org.apache.dolphinscheduler</groupId>
+                <artifactId>dolphinscheduler-bom</artifactId>
+                <version>${project.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
 
     <build>
         <plugins>

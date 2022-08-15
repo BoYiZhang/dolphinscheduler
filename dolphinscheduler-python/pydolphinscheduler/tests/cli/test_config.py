@@ -23,7 +23,7 @@ from pathlib import Path
 import pytest
 
 from pydolphinscheduler.cli.commands import cli
-from pydolphinscheduler.core.configuration import BUILD_IN_CONFIG_PATH, config_path
+from pydolphinscheduler.configuration import BUILD_IN_CONFIG_PATH, config_path
 from tests.testing.cli import CliTestWrapper
 from tests.testing.constants import DEV_MODE, ENV_PYDS_HOME
 from tests.testing.file import get_file_content
@@ -38,7 +38,9 @@ def teardown_file_env():
     config_file_path = config_path()
     if config_file_path.exists():
         config_file_path.unlink()
+    # pop environment variable to keep test cases dependent
     os.environ.pop(ENV_PYDS_HOME, None)
+    assert ENV_PYDS_HOME not in os.environ
 
 
 @pytest.mark.parametrize(

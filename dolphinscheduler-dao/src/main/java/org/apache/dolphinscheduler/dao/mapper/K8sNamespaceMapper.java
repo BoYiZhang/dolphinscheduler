@@ -21,6 +21,8 @@ import org.apache.dolphinscheduler.dao.entity.K8sNamespace;
 
 import org.apache.ibatis.annotations.Param;
 
+import java.util.List;
+
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 
@@ -41,9 +43,41 @@ public interface K8sNamespaceMapper extends BaseMapper<K8sNamespace> {
     /**
      * check the target namespace exist
      *
-     * @param namespace namespace
-     * @param k8s       k8s name
+     * @param namespace   namespace
+     * @param clusterCode clusterCode
      * @return true if exist else return null
      */
-    Boolean existNamespace(@Param("namespace") String namespace, @Param("k8s") String k8s);
+    Boolean existNamespace(@Param("namespace") String namespace, @Param("clusterCode") Long clusterCode);
+
+    /**
+     * query namespace except userId
+     *
+     * @param userId userId
+     * @return namespace list
+     */
+    List<K8sNamespace> queryNamespaceExceptUserId(@Param("userId") int userId);
+
+    /**
+     * query authed namespace list by userId
+     *
+     * @param userId userId
+     * @return namespace list
+     */
+    List<K8sNamespace> queryAuthedNamespaceListByUserId(@Param("userId") int userId);
+
+    /**
+     * query namespace can use
+     *
+     * @param userId userId
+     * @return namespace list
+     */
+    List<K8sNamespace> queryNamespaceAvailable(@Param("userId") Integer userId);
+
+    /**
+     * check the target namespace
+     *
+     * @param namespaceCode namespaceCode
+     * @return true if exist else return null
+     */
+    K8sNamespace queryByNamespaceCode(@Param("clusterCode") Long namespaceCode);
 }

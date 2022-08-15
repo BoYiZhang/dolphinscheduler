@@ -19,28 +19,41 @@ package org.apache.dolphinscheduler;
 
 import org.apache.curator.test.TestingServer;
 
-import java.util.TimeZone;
+import java.io.IOException;
 
-import javax.annotation.PostConstruct;
-
-import org.springframework.beans.factory.annotation.Value;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.boot.context.event.ApplicationFailedEvent;
+import org.springframework.context.ApplicationEvent;
+import org.springframework.context.ApplicationListener;
+import org.springframework.context.event.ContextClosedEvent;
+
+import lombok.NonNull;
 
 @SpringBootApplication
-public class StandaloneServer {
+public class StandaloneServer implements ApplicationListener<ApplicationEvent> {
 
-    @Value("${spring.jackson.time-zone:UTC}")
-    private String timezone;
+    private static final Logger logger = LoggerFactory.getLogger(StandaloneServer.class);
+
+    private static TestingServer zookeeperServer;
 
     public static void main(String[] args) throws Exception {
-        final TestingServer server = new TestingServer(true);
-        System.setProperty("registry.zookeeper.connect-string", server.getConnectString());
+        zookeeperServer = new TestingServer(true);
+        System.setProperty("registry.zookeeper.connect-string", zookeeperServer.getConnectString());
         SpringApplication.run(StandaloneServer.class, args);
     }
 
-    @PostConstruct
-    public void run() {
-        TimeZone.setDefault(TimeZone.getTimeZone(timezone));
+    @Override
+    public void onApplicationEvent(@NonNull ApplicationEvent event) {
+        if (event instanceof ApplicationFailedEvent || event instanceof ContextClosedEvent) {
+            try (TestingServer closedServer = zookeeperServer) {
+                // close the zookeeper server
+                logger.info("Receive spring context close event: {}, will closed zookeeper server", event);
+            } catch (IOException e) {
+                logger.error("Close zookeeper server error", e);
+            }
+        }
     }
 }

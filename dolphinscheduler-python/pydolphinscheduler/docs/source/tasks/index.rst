@@ -23,6 +23,7 @@ In this section
 .. toctree::
    :maxdepth: 1
    
+   func_wrap
    shell
    sql
    python
@@ -39,3 +40,5 @@ In this section
 
    datax
    sub_process
+
+   sagemaker
